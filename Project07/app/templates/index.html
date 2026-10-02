@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Project 07 - Bank Marketing</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+</head>
+
+<body>
+
+    <div class="container">
+
+        <!-- HEADER -->
+
+        <header class="header">
+
+            <div>
+                <h1>Bank Marketing Prediction</h1>
+
+                <p>
+                    Dự đoán khách hàng có đăng ký tiền gửi có kỳ hạn
+                </p>
+            </div>
+
+            <div class="threshold">
+                Threshold
+                <strong>{{ threshold }}</strong>
+            </div>
+
+        </header>
+
+
+        <!-- MODEL EVALUATION -->
+
+        <section class="card evaluation-card">
+
+            <h2>Model Evaluation</h2>
+
+            <div class="metrics-grid">
+
+                <div class="metric">
+                    <span>PR-AUC</span>
+                    <strong>{{ evaluation.pr_auc }}</strong>
+                </div>
+
+                <div class="metric">
+                    <span>Precision</span>
+                    <strong>{{ evaluation.precision }}</strong>
+                </div>
+
+                <div class="metric">
+                    <span>Recall</span>
+                    <strong>{{ evaluation.recall }}</strong>
+                </div>
+
+                <div class="metric">
+                    <span>F1</span>
+                    <strong>{{ evaluation.f1 }}</strong>
+                </div>
+
+            </div>
+
+
+            <h3>Confusion Matrix</h3>
+
+            <div class="confusion-matrix">
+
+                <div></div>
+                <div>Actual 0</div>
+                <div>Actual 1</div>
+
+                <div>Predicted 0</div>
+
+                <div>
+                    <span class="cm-label">TN</span>
+                    {{ evaluation.tn }}
+                </div>
+
+                <div>
+                    <span class="cm-label">FN</span>
+                    {{ evaluation.fn }}
+                </div>
+
+                <div>Predicted 1</div>
+
+                <div>
+                    <span class="cm-label">FP</span>
+                    {{ evaluation.fp }}
+                </div>
+
+                <div>
+                    <span class="cm-label">TP</span>
+                    {{ evaluation.tp }}
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- DASHBOARD -->
+
+        <main class="dashboard">
+
+            <!-- CUSTOMER FORM -->
+
+            <section class="card">
+
+                <h2>Customer Information</h2>
+
+                <form id="prediction-form">
+
+                    <div class="form-grid">
+
+                        <div class="form-group">
+                            <label>Age</label>
+                            <input
+                                type="number"
+                                id="age"
+                                value="35"
+                                min="18"
+                                max="100"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label>Job</label>
+                            <select id="job">
+                                <option>admin.</option>
+                                <option>blue-collar</option>
+                                <option>entrepreneur</option>
+                                <option>housemaid</option>
+                                <option>management</option>
+                                <option>retired</option>
+                                <option>self-employed</option>
+                                <option>services</option>
+                                <option>student</option>
+                                <option selected>technician</option>
+                                <option>unemployed</option>
+                                <option>unknown</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Marital</label>
+                            <select id="marital">
+                                <option>divorced</option>
+                                <option>married</option>
+                                <option selected>single</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Education</label>
+                            <select id="education">
+                                <option>primary</option>
+                                <option selected>secondary</option>
+                                <option>tertiary</option>
+                                <option>unknown</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Default</label>
+                            <select id="default">
+                                <option selected>no</option>
+                                <option>yes</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Balance</label>
+                            <input
+                                type="number"
+                                id="balance"
+                                value="1500"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label>Housing</label>
+                            <select id="housing">
+                                <option>no</option>
+                                <option selected>yes</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Loan</label>
+                            <select id="loan">
+                                <option selected>no</option>
+                                <option>yes</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Contact</label>
+                            <select id="contact">
+                                <option selected>cellular</option>
+                                <option>telephone</option>
+                                <option>unknown</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Day</label>
+                            <input
+                                type="number"
+                                id="day"
+                                value="15"
+                                min="1"
+                                max="31"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label>Month</label>
+                            <select id="month">
+                                <option>jan</option>
+                                <option>feb</option>
+                                <option>mar</option>
+                                <option>apr</option>
+                                <option selected>may</option>
+                                <option>jun</option>
+                                <option>jul</option>
+                                <option>aug</option>
+                                <option>sep</option>
+                                <option>oct</option>
+                                <option>nov</option>
+                                <option>dec</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Campaign</label>
+                            <input
+                                type="number"
+                                id="campaign"
+                                value="2"
+                                min="1"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label>Pdays</label>
+                            <input
+                                type="number"
+                                id="pdays"
+                                value="-1"
+                                min="-1"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label>Previous</label>
+                            <input
+                                type="number"
+                                id="previous"
+                                value="0"
+                                min="0"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label>Poutcome</label>
+                            <select id="poutcome">
+                                <option>failure</option>
+                                <option>other</option>
+                                <option>success</option>
+                                <option selected>unknown</option>
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <button type="submit">
+                        Predict
+                    </button>
+
+                </form>
+
+            </section>
+
+
+            <!-- PREDICTION RESULT -->
+
+            <section class="card result-card">
+
+                <h2>Prediction Result</h2>
+
+                <div id="result">
+
+                    <div class="result-placeholder">
+                        Nhập thông tin và nhấn Predict
+                    </div>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+
+</html>
