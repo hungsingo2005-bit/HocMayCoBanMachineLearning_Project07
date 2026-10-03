@@ -164,7 +164,98 @@ print(test_cm)
 # ERROR ANALYSIS
 # ==================================================
 
-# ... giữ nguyên toàn bộ phần Error Analysis của bro ...
+# Tạo DataFrame từ tập Test
+error_df = X_test.copy()
+
+# Thêm giá trị thực tế và dự đoán
+error_df["actual"] = y_test.values
+error_df["predicted"] = test_pred
+
+# Xác định loại kết quả
+error_df["error_type"] = "TN"
+
+error_df.loc[
+    (error_df["actual"] == 0) & (error_df["predicted"] == 1),
+    "error_type"
+] = "FP"
+
+error_df.loc[
+    (error_df["actual"] == 1) & (error_df["predicted"] == 0),
+    "error_type"
+] = "FN"
+
+error_df.loc[
+    (error_df["actual"] == 1) & (error_df["predicted"] == 1),
+    "error_type"
+] = "TP"
+
+
+# -------------------------
+# 1. Tổng số lỗi
+# -------------------------
+
+print("\nError counts:")
+
+print(
+    error_df["error_type"]
+    .value_counts()
+    .reindex(["TN", "FN", "TP", "FP"], fill_value=0)
+)
+
+
+# -------------------------
+# 2. Phân tích theo độ tuổi
+# -------------------------
+
+def age_group(age):
+    if age <= 30:
+        return "18-30"
+    elif age <= 40:
+        return "31-40"
+    elif age <= 50:
+        return "41-50"
+    elif age <= 60:
+        return "51-60"
+    else:
+        return "61+"
+
+
+error_df["age_group"] = error_df["age"].apply(age_group)
+
+age_analysis = (
+    error_df
+    .groupby("age_group")
+    .agg(
+        samples=("actual", "size"),
+        positive_actual=("actual", "sum"),
+        positive_predicted=("predicted", "sum"),
+        FP=("error_type", lambda x: (x == "FP").sum()),
+        FN=("error_type", lambda x: (x == "FN").sum())
+    )
+)
+
+print("\nBy age:")
+print(age_analysis)
+
+
+# -------------------------
+# 3. Phân tích theo nghề nghiệp
+# -------------------------
+
+job_analysis = (
+    error_df
+    .groupby("job")
+    .agg(
+        samples=("actual", "size"),
+        positive_actual=("actual", "sum"),
+        positive_predicted=("predicted", "sum"),
+        FP=("error_type", lambda x: (x == "FP").sum()),
+        FN=("error_type", lambda x: (x == "FN").sum())
+    )
+)
+
+print("\nBy job:")
+print(job_analysis)
 
 
 # ==================================================
