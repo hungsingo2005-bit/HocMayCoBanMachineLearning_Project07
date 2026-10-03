@@ -169,7 +169,7 @@ error_df = X_test.copy()
 
 # Thêm giá trị thực tế và dự đoán
 error_df["actual"] = y_test.values
-error_df["predicted"] = test_pred
+error_df["predicted"] = y_test_pred #đã sửa lại biến test_pred thành y_test_pred
 
 # Xác định loại kết quả
 error_df["error_type"] = "TN"
