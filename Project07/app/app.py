@@ -2,44 +2,149 @@ from flask import Flask, request, jsonify, render_template
 import joblib
 import pandas as pd
 import json
+from pathlib import Path
+
 
 app = Flask(__name__)
 
-model = joblib.load("models/model.joblib")
+# Project root: Project07/
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+# Load trained model
+model = joblib.load(
+    PROJECT_ROOT / "models" / "model.joblib"
+)
+
+# Decision threshold
 THRESHOLD = 0.30
 
-with open("reports/evaluation.json", "r", encoding="utf-8") as f:
+# Load evaluation results
+with open(
+    PROJECT_ROOT / "reports" / "evaluation.json",
+    "r",
+    encoding="utf-8"
+) as f:
     evaluation = json.load(f)
 
+
+# =========================
+# REQUIRED FIELDS
+# =========================
+
 REQUIRED_FIELDS = [
-    "age", "job", "marital", "education", "default",
-    "balance", "housing", "loan", "contact", "day",
-    "month", "campaign", "pdays", "previous", "poutcome"
+    "age",
+    "job",
+    "marital",
+    "education",
+    "default",
+    "balance",
+    "housing",
+    "loan",
+    "contact",
+    "day",
+    "month",
+    "campaign",
+    "pdays",
+    "previous",
+    "poutcome"
 ]
+
+
+# =========================
+# VALID VALUES
+# =========================
 
 VALID_VALUES = {
     "job": [
-        "admin.", "blue-collar", "entrepreneur", "housemaid",
-        "management", "retired", "self-employed", "services",
-        "student", "technician", "unemployed", "unknown"
+        "admin.",
+        "blue-collar",
+        "entrepreneur",
+        "housemaid",
+        "management",
+        "retired",
+        "self-employed",
+        "services",
+        "student",
+        "technician",
+        "unemployed",
+        "unknown"
     ],
-    "marital": ["divorced", "married", "single"],
-    "education": ["primary", "secondary", "tertiary", "unknown"],
-    "default": ["no", "yes"],
-    "housing": ["no", "yes"],
-    "loan": ["no", "yes"],
-    "contact": ["cellular", "telephone", "unknown"],
+
+    "marital": [
+        "divorced",
+        "married",
+        "single"
+    ],
+
+    "education": [
+        "primary",
+        "secondary",
+        "tertiary",
+        "unknown"
+    ],
+
+    "default": [
+        "no",
+        "yes"
+    ],
+
+    "housing": [
+        "no",
+        "yes"
+    ],
+
+    "loan": [
+        "no",
+        "yes"
+    ],
+
+    "contact": [
+        "cellular",
+        "telephone",
+        "unknown"
+    ],
+
     "month": [
-        "apr", "aug", "dec", "feb", "jan", "jul",
-        "jun", "mar", "may", "nov", "oct", "sep"
+        "apr",
+        "aug",
+        "dec",
+        "feb",
+        "jan",
+        "jul",
+        "jun",
+        "mar",
+        "may",
+        "nov",
+        "oct",
+        "sep"
     ],
-    "poutcome": ["failure", "other", "success", "unknown"]
+
+    "poutcome": [
+        "failure",
+        "other",
+        "success",
+        "unknown"
+    ]
 }
 
+
+# =========================
+# NUMERIC FIELDS
+# =========================
+
 NUMERIC_FIELDS = [
-    "age", "balance", "day", "campaign", "pdays", "previous"
+    "age",
+    "balance",
+    "day",
+    "campaign",
+    "pdays",
+    "previous"
 ]
 
+
+# =========================
+# HOME PAGE
+# =========================
 
 @app.route("/")
 def home():
@@ -49,9 +154,15 @@ def home():
         evaluation=evaluation
     )
 
+
+# =========================
+# API: SCORE
+# =========================
+
 @app.route("/api/score", methods=["POST"])
 def score():
 
+    # Read JSON request
     data = request.get_json(silent=True)
 
     if data is None:
@@ -59,8 +170,14 @@ def score():
             "error": "Request body must be valid JSON."
         }), 400
 
+
+    # =========================
+    # CHECK MISSING FIELDS
+    # =========================
+
     missing_fields = [
-        field for field in REQUIRED_FIELDS
+        field
+        for field in REQUIRED_FIELDS
         if field not in data
     ]
 
@@ -70,8 +187,14 @@ def score():
             "missing_fields": missing_fields
         }), 400
 
+
+    # =========================
+    # CHECK EXTRA FIELDS
+    # =========================
+
     extra_fields = [
-        field for field in data
+        field
+        for field in data
         if field not in REQUIRED_FIELDS
     ]
 
@@ -81,49 +204,90 @@ def score():
             "extra_fields": extra_fields
         }), 400
 
+
+    # =========================
+    # CHECK NUMERIC TYPES
+    # =========================
+
     for field in NUMERIC_FIELDS:
-        if not isinstance(data[field], (int, float)) or isinstance(data[field], bool):
+
+        if (
+            not isinstance(data[field], (int, float))
+            or isinstance(data[field], bool)
+        ):
             return jsonify({
                 "error": f"Field '{field}' must be a number."
             }), 400
 
+
+    # =========================
+    # CHECK CATEGORICAL VALUES
+    # =========================
+
     for field, valid_values in VALID_VALUES.items():
+
         if data[field] not in valid_values:
             return jsonify({
                 "error": f"Invalid value for '{field}'.",
                 "allowed_values": valid_values
             }), 400
 
+
+    # =========================
+    # CHECK VALUE RANGES
+    # =========================
+
     if not 18 <= data["age"] <= 100:
         return jsonify({
             "error": "Field 'age' must be between 18 and 100."
         }), 400
+
 
     if not 1 <= data["day"] <= 31:
         return jsonify({
             "error": "Field 'day' must be between 1 and 31."
         }), 400
 
+
     if data["campaign"] < 1:
         return jsonify({
             "error": "Field 'campaign' must be >= 1."
         }), 400
+
 
     if data["pdays"] < -1:
         return jsonify({
             "error": "Field 'pdays' must be >= -1."
         }), 400
 
+
     if data["previous"] < 0:
         return jsonify({
             "error": "Field 'previous' must be >= 0."
         }), 400
 
+
+    # =========================
+    # CREATE INPUT DATAFRAME
+    # =========================
+
     X = pd.DataFrame([data])
+
+
+    # =========================
+    # MODEL PREDICTION
+    # =========================
 
     probability = model.predict_proba(X)[0][1]
 
-    prediction = int(probability >= THRESHOLD)
+    prediction = int(
+        probability >= THRESHOLD
+    )
+
+
+    # =========================
+    # API RESPONSE
+    # =========================
 
     return jsonify({
         "probability": round(float(probability), 4),
@@ -132,6 +296,10 @@ def score():
         "decision": "yes" if prediction == 1 else "no"
     })
 
+
+# =========================
+# RUN APPLICATION
+# =========================
 
 if __name__ == "__main__":
     app.run(debug=True)
