@@ -1,7 +1,13 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from pathlib import Path
 
-df = pd.read_csv("data/bank-full.csv", sep=";")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+DATA_PATH = PROJECT_ROOT / "data" / "bank-full.csv"
+
+df = pd.read_csv(DATA_PATH, sep=";")
+
 print("Shape:", df.shape)
 print("\nColumns:")
 print(df.columns.tolist())

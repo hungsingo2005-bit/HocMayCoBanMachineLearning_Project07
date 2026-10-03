@@ -10,9 +10,14 @@ from sklearn.metrics import (
     confusion_matrix
 )
 
+from pathlib import Path
 
-# Load dataset
-df = pd.read_csv("data/bank-full.csv", sep=";")
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+DATA_PATH = PROJECT_ROOT / "data" / "bank-full.csv"
+
+df = pd.read_csv(DATA_PATH, sep=";")
+
 
 # Remove leakage feature
 df = df.drop(columns=["duration"])
@@ -169,7 +174,11 @@ error_df = X_test.copy()
 
 # Thêm giá trị thực tế và dự đoán
 error_df["actual"] = y_test.values
+<<<<<<< HEAD
 error_df["predicted"] = y_test_pred #đã sửa lại biến test_pred thành y_test_pred
+=======
+error_df["predicted"] = y_test_pred
+>>>>>>> e13faa9 (FIX PATH)
 
 # Xác định loại kết quả
 error_df["error_type"] = "TN"
