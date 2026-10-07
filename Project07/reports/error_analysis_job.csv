@@ -1,0 +1,13 @@
+job,samples,positive_actual,positive_predicted,FP,FN,TP,TN
+admin.,736,83,92,53,44,39,600
+blue-collar,1448,105,37,14,82,23,1329
+entrepreneur,230,20,9,7,18,2,203
+housemaid,173,19,12,5,12,7,149
+management,1450,188,170,94,112,76,1168
+retired,343,86,111,57,32,54,200
+self-employed,247,36,24,10,22,14,201
+services,616,48,33,14,29,19,554
+student,134,39,59,36,16,23,59
+technician,1174,131,98,48,81,50,995
+unemployed,192,32,39,23,16,16,137
+unknown,39,6,6,4,4,2,29

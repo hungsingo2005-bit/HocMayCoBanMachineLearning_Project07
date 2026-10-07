@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "project07"
+version = "0.1.0"
+description = "Bank Marketing Machine Learning Project"
+requires-python = ">=3.10"
+
+dependencies = [
+    "pandas",
+    "numpy",
+    "scikit-learn",
+    "joblib",
+    "flask",
+    "matplotlib"
+]
+
+[tool.setuptools]
+py-modules = ["paths"]

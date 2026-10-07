@@ -7,18 +7,27 @@ from pathlib import Path
 
 app = Flask(__name__)
 
-# Project root: Project07/
+
+# ==================================================
+# PROJECT ROOT
+# ==================================================
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-# Load trained model
+
+# ==================================================
+# LOAD TRAINED MODEL
+# ==================================================
+
 model = joblib.load(
     PROJECT_ROOT / "models" / "model.joblib"
 )
 
-# Decision threshold
-THRESHOLD = 0.30
 
-# Load evaluation results
+# ==================================================
+# LOAD EVALUATION RESULTS
+# ==================================================
+
 with open(
     PROJECT_ROOT / "reports" / "evaluation.json",
     "r",
@@ -27,9 +36,18 @@ with open(
     evaluation = json.load(f)
 
 
-# =========================
+# ==================================================
+# DECISION THRESHOLD
+# ==================================================
+
+# Automatically use the best threshold
+# selected from the validation set
+THRESHOLD = evaluation["validation"]["selected_threshold"]
+
+
+# ==================================================
 # REQUIRED FIELDS
-# =========================
+# ==================================================
 
 REQUIRED_FIELDS = [
     "age",
@@ -50,11 +68,12 @@ REQUIRED_FIELDS = [
 ]
 
 
-# =========================
+# ==================================================
 # VALID VALUES
-# =========================
+# ==================================================
 
 VALID_VALUES = {
+
     "job": [
         "admin.",
         "blue-collar",
@@ -128,9 +147,9 @@ VALID_VALUES = {
 }
 
 
-# =========================
+# ==================================================
 # NUMERIC FIELDS
-# =========================
+# ==================================================
 
 NUMERIC_FIELDS = [
     "age",
@@ -142,38 +161,45 @@ NUMERIC_FIELDS = [
 ]
 
 
-# =========================
+# ==================================================
 # HOME PAGE
-# =========================
+# ==================================================
 
 @app.route("/")
 def home():
+
     return render_template(
         "index.html",
         threshold=THRESHOLD,
-        evaluation=evaluation
+        evaluation=evaluation["test"]
     )
 
 
-# =========================
+# ==================================================
 # API: SCORE
-# =========================
+# ==================================================
 
 @app.route("/api/score", methods=["POST"])
 def score():
 
+    # --------------------------------------------------
     # Read JSON request
-    data = request.get_json(silent=True)
+    # --------------------------------------------------
+
+    data = request.get_json(
+        silent=True
+    )
 
     if data is None:
+
         return jsonify({
             "error": "Request body must be valid JSON."
         }), 400
 
 
-    # =========================
-    # CHECK MISSING FIELDS
-    # =========================
+    # --------------------------------------------------
+    # Check missing fields
+    # --------------------------------------------------
 
     missing_fields = [
         field
@@ -182,15 +208,16 @@ def score():
     ]
 
     if missing_fields:
+
         return jsonify({
             "error": "Missing required fields.",
             "missing_fields": missing_fields
         }), 400
 
 
-    # =========================
-    # CHECK EXTRA FIELDS
-    # =========================
+    # --------------------------------------------------
+    # Check extra fields
+    # --------------------------------------------------
 
     extra_fields = [
         field
@@ -199,107 +226,164 @@ def score():
     ]
 
     if extra_fields:
+
         return jsonify({
             "error": "Unknown fields.",
             "extra_fields": extra_fields
         }), 400
 
 
-    # =========================
-    # CHECK NUMERIC TYPES
-    # =========================
+    # --------------------------------------------------
+    # Check numeric types
+    # --------------------------------------------------
 
     for field in NUMERIC_FIELDS:
 
         if (
-            not isinstance(data[field], (int, float))
-            or isinstance(data[field], bool)
+            not isinstance(
+                data[field],
+                (int, float)
+            )
+            or isinstance(
+                data[field],
+                bool
+            )
         ):
+
             return jsonify({
-                "error": f"Field '{field}' must be a number."
+                "error": (
+                    f"Field '{field}' "
+                    "must be a number."
+                )
             }), 400
 
 
-    # =========================
-    # CHECK CATEGORICAL VALUES
-    # =========================
+    # --------------------------------------------------
+    # Check categorical values
+    # --------------------------------------------------
 
     for field, valid_values in VALID_VALUES.items():
 
         if data[field] not in valid_values:
+
             return jsonify({
-                "error": f"Invalid value for '{field}'.",
+                "error": (
+                    f"Invalid value for '{field}'."
+                ),
                 "allowed_values": valid_values
             }), 400
 
 
-    # =========================
-    # CHECK VALUE RANGES
-    # =========================
+    # --------------------------------------------------
+    # Check value ranges
+    # --------------------------------------------------
 
     if not 18 <= data["age"] <= 100:
+
         return jsonify({
-            "error": "Field 'age' must be between 18 and 100."
+            "error": (
+                "Field 'age' must be "
+                "between 18 and 100."
+            )
         }), 400
 
 
     if not 1 <= data["day"] <= 31:
+
         return jsonify({
-            "error": "Field 'day' must be between 1 and 31."
+            "error": (
+                "Field 'day' must be "
+                "between 1 and 31."
+            )
         }), 400
 
 
     if data["campaign"] < 1:
+
         return jsonify({
-            "error": "Field 'campaign' must be >= 1."
+            "error": (
+                "Field 'campaign' "
+                "must be >= 1."
+            )
         }), 400
 
 
     if data["pdays"] < -1:
+
         return jsonify({
-            "error": "Field 'pdays' must be >= -1."
+            "error": (
+                "Field 'pdays' "
+                "must be >= -1."
+            )
         }), 400
 
 
     if data["previous"] < 0:
+
         return jsonify({
-            "error": "Field 'previous' must be >= 0."
+            "error": (
+                "Field 'previous' "
+                "must be >= 0."
+            )
         }), 400
 
 
-    # =========================
+    # ==================================================
     # CREATE INPUT DATAFRAME
-    # =========================
+    # ==================================================
 
-    X = pd.DataFrame([data])
+    X = pd.DataFrame([
+        data
+    ])
 
 
-    # =========================
+    # ==================================================
     # MODEL PREDICTION
-    # =========================
+    # ==================================================
 
-    probability = model.predict_proba(X)[0][1]
+    probability = model.predict_proba(
+        X
+    )[0][1]
+
 
     prediction = int(
         probability >= THRESHOLD
     )
 
 
-    # =========================
+    # ==================================================
     # API RESPONSE
-    # =========================
+    # ==================================================
 
     return jsonify({
-        "probability": round(float(probability), 4),
+
+        "probability": round(
+            float(probability),
+            4
+        ),
+
         "threshold": THRESHOLD,
+
         "prediction": prediction,
-        "decision": "yes" if prediction == 1 else "no"
+
+        "decision": (
+            "yes"
+            if prediction == 1
+            else "no"
+        )
     })
 
 
-# =========================
+# ==================================================
 # RUN APPLICATION
-# =========================
+# ==================================================
 
 if __name__ == "__main__":
-    app.run(debug=True)
+
+    print(
+        f"Using threshold: {THRESHOLD:.2f}"
+    )
+
+    app.run(
+        debug=True
+    )

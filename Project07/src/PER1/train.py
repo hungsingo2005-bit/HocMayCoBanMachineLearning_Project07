@@ -1,7 +1,5 @@
-import numpy as np
-import pandas as pd
-
 import joblib
+import pandas as pd
 from pathlib import Path
 
 from sklearn.model_selection import train_test_split
@@ -17,21 +15,29 @@ from sklearn.metrics import (
 )
 
 from features import preprocessor
+from paths import DATA_FILE, MODEL_FILE
 
 
+# ==================================================
+# LOAD DATA
+# ==================================================
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+df = pd.read_csv(DATA_FILE, sep=";")
 
-DATA_PATH = PROJECT_ROOT / "data" / "bank-full.csv"
-
-df = pd.read_csv(DATA_PATH, sep=";")
 
 # Remove leakage column
 df = df.drop(columns=["duration"])
+
+
 # Separate features and target
 X = df.drop(columns=["y"])
 y = df["y"].map({"no": 0, "yes": 1})
-# Split Train / Validation / Test
+
+
+# ==================================================
+# SPLIT TRAIN / VALIDATION / TEST
+# ==================================================
+
 X_train, X_temp, y_train, y_temp = train_test_split(
     X,
     y,
@@ -39,6 +45,7 @@ X_train, X_temp, y_train, y_temp = train_test_split(
     random_state=42,
     stratify=y
 )
+
 X_val, X_test, y_val, y_test = train_test_split(
     X_temp,
     y_temp,
@@ -46,40 +53,75 @@ X_val, X_test, y_val, y_test = train_test_split(
     random_state=42,
     stratify=y_temp
 )
-# Build model pipeline
+
+
+# ==================================================
+# BUILD MODEL PIPELINE
+# ==================================================
+
 model = Pipeline([
     ("preprocessor", preprocessor),
     ("classifier", LogisticRegression(max_iter=1000))
 ])
-# Train
+
+
+# ==================================================
+# TRAIN
+# ==================================================
+
 model.fit(X_train, y_train)
 
-# Save trained model
-Path("models").mkdir(exist_ok=True)
-joblib.dump(model, "models/model.joblib")
+
+# ==================================================
+# SAVE TRAINED MODEL
+# ==================================================
+
+MODEL_FILE.parent.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+joblib.dump(model, MODEL_FILE)
 
 print("Model trained successfully!")
-print("Model saved to models/model.joblib")
+print(f"Model saved to {MODEL_FILE}")
 
 
-# Predict probability
+# ==================================================
+# VALIDATION PREDICTION
+# ==================================================
+
 y_val_proba = model.predict_proba(X_val)[:, 1]
 
 print("\nFirst 10 predicted probabilities:")
 print(y_val_proba[:10])
 
+
+# ==================================================
 # PR-AUC
-pr_auc = average_precision_score(y_val, y_val_proba)
+# ==================================================
+
+pr_auc = average_precision_score(
+    y_val,
+    y_val_proba
+)
 
 print(f"\nPR-AUC: {pr_auc:.4f}")
 
-# Threshold evaluation
+
+# ==================================================
+# THRESHOLD EVALUATION
+# ==================================================
+
 thresholds = [0.30, 0.50, 0.70]
 
 print("\nThreshold evaluation:")
 
 for threshold in thresholds:
-    y_val_pred = (y_val_proba >= threshold).astype(int)
+
+    y_val_pred = (
+        y_val_proba >= threshold
+    ).astype(int)
 
     precision = precision_score(
         y_val,
@@ -99,7 +141,10 @@ for threshold in thresholds:
         zero_division=0
     )
 
-    cm = confusion_matrix(y_val, y_val_pred)
+    cm = confusion_matrix(
+        y_val,
+        y_val_pred
+    )
 
     print(f"\nThreshold: {threshold}")
     print(f"Precision: {precision:.4f}")
@@ -109,15 +154,20 @@ for threshold in thresholds:
     print(cm)
 
 
-# Random baseline with the same contact rate as threshold 0.30
+# ==================================================
+# RANDOM BASELINE
+# Same contact rate as threshold 0.30
+# ==================================================
 
 threshold = 0.30
 
-y_model_pred = (y_val_proba >= threshold).astype(int)
+y_model_pred = (
+    y_val_proba >= threshold
+).astype(int)
 
 n_contacts = y_model_pred.sum()
 
-rng = np.random.default_rng(42)
+rng = __import__("numpy").random.default_rng(42)
 
 random_indices = rng.choice(
     len(y_val),
@@ -125,8 +175,13 @@ random_indices = rng.choice(
     replace=False
 )
 
-y_random = np.zeros(len(y_val), dtype=int)
+y_random = __import__("numpy").zeros(
+    len(y_val),
+    dtype=int
+)
+
 y_random[random_indices] = 1
+
 
 random_precision = precision_score(
     y_val,
@@ -146,6 +201,7 @@ random_f1 = f1_score(
     zero_division=0
 )
 
+
 print("\nRandom Baseline:")
 print(f"Number of contacts: {n_contacts}")
 print(f"Contact rate: {n_contacts / len(y_val):.4f}")
@@ -154,8 +210,14 @@ print(f"Recall:    {random_recall:.4f}")
 print(f"F1:        {random_f1:.4f}")
 
 
-# Baseline: all negative
-y_baseline = np.zeros(len(y_val), dtype=int)
+# ==================================================
+# BASELINE - ALL NEGATIVE
+# ==================================================
+
+y_baseline = __import__("numpy").zeros(
+    len(y_val),
+    dtype=int
+)
 
 baseline_precision = precision_score(
     y_val,
@@ -174,6 +236,7 @@ baseline_f1 = f1_score(
     y_baseline,
     zero_division=0
 )
+
 
 print("\nBaseline - All Negative:")
 print(f"Precision: {baseline_precision:.4f}")

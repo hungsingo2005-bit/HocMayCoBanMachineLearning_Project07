@@ -1,3 +1,4 @@
+import json
 import joblib
 import pandas as pd
 
@@ -10,24 +11,29 @@ from sklearn.metrics import (
     confusion_matrix
 )
 
-from pathlib import Path
+from paths import DATA_FILE, MODEL_FILE, EVALUATION_FILE
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-DATA_PATH = PROJECT_ROOT / "data" / "bank-full.csv"
+# ==================================================
+# LOAD DATA
+# ==================================================
 
-df = pd.read_csv(DATA_PATH, sep=";")
+df = pd.read_csv(DATA_FILE, sep=";")
 
 
 # Remove leakage feature
 df = df.drop(columns=["duration"])
+
 
 # Prepare X and y
 X = df.drop(columns=["y"])
 y = df["y"].map({"no": 0, "yes": 1})
 
 
-# Split data
+# ==================================================
+# SPLIT DATA
+# ==================================================
+
 X_train, X_temp, y_train, y_temp = train_test_split(
     X,
     y,
@@ -45,11 +51,18 @@ X_val, X_test, y_val, y_test = train_test_split(
 )
 
 
-# Load trained model
-model = joblib.load("models/model.joblib")
+# ==================================================
+# LOAD TRAINED MODEL
+# ==================================================
+
+model = joblib.load(MODEL_FILE)
 
 print("Model loaded successfully!")
 
+
+# ==================================================
+# VALIDATION EVALUATION
+# ==================================================
 
 # Predict probability on validation set
 y_val_proba = model.predict_proba(X_val)[:, 1]
@@ -114,8 +127,10 @@ print("\n" + "=" * 50)
 print("FINAL TEST EVALUATION")
 print("=" * 50)
 
+
 # Predict probability on test set
 y_test_proba = model.predict_proba(X_test)[:, 1]
+
 
 # Test PR-AUC
 test_pr_auc = average_precision_score(
@@ -132,6 +147,7 @@ threshold = 0.30
 y_test_pred = (
     y_test_proba >= threshold
 ).astype(int)
+
 
 test_precision = precision_score(
     y_test,
@@ -156,6 +172,7 @@ test_cm = confusion_matrix(
     y_test_pred
 )
 
+
 print(f"\nThreshold: {threshold}")
 print(f"Precision: {test_precision:.4f}")
 print(f"Recall:    {test_recall:.4f}")
@@ -169,18 +186,15 @@ print(test_cm)
 # ERROR ANALYSIS
 # ==================================================
 
-# Tạo DataFrame từ tập Test
+# Create DataFrame from test set
 error_df = X_test.copy()
 
-# Thêm giá trị thực tế và dự đoán
+# Add actual and predicted values
 error_df["actual"] = y_test.values
-<<<<<<< HEAD
-error_df["predicted"] = y_test_pred #đã sửa lại biến test_pred thành y_test_pred
-=======
 error_df["predicted"] = y_test_pred
->>>>>>> e13faa9 (FIX PATH)
 
-# Xác định loại kết quả
+
+# Determine error type
 error_df["error_type"] = "TN"
 
 error_df.loc[
@@ -199,22 +213,25 @@ error_df.loc[
 ] = "TP"
 
 
-# -------------------------
-# 1. Tổng số lỗi
-# -------------------------
+# ==================================================
+# 1. TOTAL ERROR COUNTS
+# ==================================================
 
 print("\nError counts:")
 
 print(
     error_df["error_type"]
     .value_counts()
-    .reindex(["TN", "FN", "TP", "FP"], fill_value=0)
+    .reindex(
+        ["TN", "FN", "TP", "FP"],
+        fill_value=0
+    )
 )
 
 
-# -------------------------
-# 2. Phân tích theo độ tuổi
-# -------------------------
+# ==================================================
+# 2. ANALYSIS BY AGE
+# ==================================================
 
 def age_group(age):
     if age <= 30:
@@ -231,6 +248,7 @@ def age_group(age):
 
 error_df["age_group"] = error_df["age"].apply(age_group)
 
+
 age_analysis = (
     error_df
     .groupby("age_group")
@@ -243,13 +261,14 @@ age_analysis = (
     )
 )
 
+
 print("\nBy age:")
 print(age_analysis)
 
 
-# -------------------------
-# 3. Phân tích theo nghề nghiệp
-# -------------------------
+# ==================================================
+# 3. ANALYSIS BY JOB
+# ==================================================
 
 job_analysis = (
     error_df
@@ -263,6 +282,7 @@ job_analysis = (
     )
 )
 
+
 print("\nBy job:")
 print(job_analysis)
 
@@ -271,11 +291,8 @@ print(job_analysis)
 # SAVE FINAL TEST EVALUATION
 # ==================================================
 
-import json
-from pathlib import Path
-
-# Get confusion matrix values from FINAL TEST
 test_tn, test_fp, test_fn, test_tp = test_cm.ravel()
+
 
 evaluation = {
     "threshold": 0.30,
@@ -289,9 +306,25 @@ evaluation = {
     "tp": int(test_tp)
 }
 
-Path("reports").mkdir(exist_ok=True)
 
-with open("reports/evaluation.json", "w", encoding="utf-8") as f:
-    json.dump(evaluation, f, indent=4)
+EVALUATION_FILE.parent.mkdir(
+    parents=True,
+    exist_ok=True
+)
 
-print("\nEvaluation saved to reports/evaluation.json")
+
+with open(
+    EVALUATION_FILE,
+    "w",
+    encoding="utf-8"
+) as f:
+    json.dump(
+        evaluation,
+        f,
+        indent=4
+    )
+
+
+print(
+    f"\nEvaluation saved to {EVALUATION_FILE}"
+)
