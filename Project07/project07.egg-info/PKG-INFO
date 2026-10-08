@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: project07
+Version: 0.1.0
+Summary: Bank Marketing Machine Learning Project
+Requires-Python: >=3.10
+Requires-Dist: pandas
+Requires-Dist: numpy
+Requires-Dist: scikit-learn
+Requires-Dist: joblib
+Requires-Dist: flask
+Requires-Dist: matplotlib

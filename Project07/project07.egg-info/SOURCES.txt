@@ -1,0 +1,7 @@
+paths.py
+pyproject.toml
+project07.egg-info/PKG-INFO
+project07.egg-info/SOURCES.txt
+project07.egg-info/dependency_links.txt
+project07.egg-info/requires.txt
+project07.egg-info/top_level.txt
